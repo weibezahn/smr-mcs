@@ -32,7 +32,7 @@ function investment_simulation(opt_scaling::String, n::Int64, wacc::Vector, elec
             if opt_scaling == "Manufacturer"
                 @info("using manufacturer estimates")
                 # deterministic investment cost based on manufacturer estimates [USD]
-                rand_investment = pj.investment * pj.plant_capacity * ones(n)*(1-pj.learning_factor)
+                rand_investment = pj.investment * pj.plant_capacity * ones(n) * (1-pj.learning_factor)
             elseif opt_scaling == "Roulstone"
                 @info("using Roulstone scaling")
                 # random investment cost based on Roulstone [USD]
@@ -90,12 +90,12 @@ function investment_simulation(opt_scaling::String, n::Int64, wacc::Vector, elec
                 cash_out[:,t] = rand_investment ./ pj.time[1]
                 cash_net[:,t] = cash_in[:,t] - cash_out[:,t]
             else
+                # amount of electricity produced
                 electricity[:,t] = pj.plant_capacity .* rand_loadfactor[:,t] .* 8760
                 # cash inflow from electricity sales
                 cash_in[:,t] = rand_electricity_price[:,t] .* electricity[:,t]
-                # cash inflow O&M costs
+                # cash outflow O&M costs
                 cash_out[:,t] = operating_cost_fix .+ operating_cost_variable * electricity[:,t]
-                # net cashflow
                 cash_net[:,t] = cash_in[:,t] - cash_out[:,t]
                 disc_electricity[:,t] = electricity[:,t] ./ ((1 .+ rand_wacc[:]) .^ (t-1))
             end
@@ -117,7 +117,7 @@ end
 # scaling option
 opts_scaling = ["Manufacturer", "Roulstone", "Rothwell", "uniform"]
 
-# Number of Monte-Carlo runs
+# number of Monte Carlo runs
 n = Int64(1e6)
 
 # define a project (can later be imported from data file)
