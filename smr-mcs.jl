@@ -1,5 +1,6 @@
 ##### activate environment #####
 using Pkg
+using CSV, DataFrames
 using BenchmarkTools
 Pkg.activate(pwd())
 
@@ -10,13 +11,34 @@ struct for investment project data
 """
 mutable struct project
     name::String                    # investment concept
-    investment::Float64             # investment cost estimate by manufacturer [USD/MW]
+    type::String                    # investment type
+    investment::Float64             # investment estimate by manufacturer [USD/MW]
     plant_capacity::Float64         # plant capacity [MW]
     learning_factor::Float64        # learning factor
     time::AbstractVector            # project time [years] (construction time, plant lifetime)
     loadfactor::AbstractVector      # load factor, lower, and upper bound of rand variable
     operating_cost::AbstractVector  # O&M cost (O&M fix cost [USD/MW], O&M variable cost [USD/MWh], fuel cost [USD/MWh])
     reference_pj::AbstractVector    # reference reactor (investment costs [USD/MW], plant capacity [MW])
+end
+
+##### loading project data #####
+
+pjs_dat = CSV.File("project_data.csv") |> DataFrame # read project data from CSV into a dataframe
+pjs = []                                            # initialize empty projects vector
+
+# populate array with projects using project data input
+for i in 1:nrow(pjs_dat)
+    push!(pjs,project(
+        pjs_dat.name[i],
+        pjs_dat.type[i],
+        pjs_dat.investment[i],
+        pjs_dat.plant_capacity[i],
+        pjs_dat.learning_factor[i],
+        [pjs_dat.construction_time[i],pjs_dat.operating_time[i]],
+        [pjs_dat.loadfactor_lower[i],pjs_dat.loadfactor_upper[i]],
+        [pjs_dat.operating_cost_fix[i],pjs_dat.operating_cost_variable[i],pjs_dat.operating_cost_fuel[i]],
+        [pjs_dat.reference_pj_investment[i];pjs_dat.reference_pj_capacity[i]]
+        ))
 end
 
 ##### functions #####
@@ -108,7 +130,7 @@ function investment_simulation(opt_scaling::String, n::Int64, wacc::Vector, elec
     lcoe = sum(disc_cash_out[:,:]) / sum(disc_electricity[:,:])
 
     # output
-    @info(opt_scaling,npv,lcoe)
+    @info("simulation results",pj.name,pj.type,npv,lcoe)
     return(npv,lcoe)
 end
 
@@ -119,9 +141,6 @@ opts_scaling = ["Manufacturer", "Roulstone", "Rothwell", "uniform"]
 
 # number of Monte Carlo runs
 n = Int64(1e6)
-
-# define a project (can later be imported from data file)
-pj = project("NuScale",3951240,77,0.1,[3,60],[0.78, 0.85],[179595,3.1350,7.157376],[9.965e6,1117])
 
 # wholesale electricity price [USD/MWh], lower and upper bound of rand variable
 electricity_price = [52.22, 95.84]
@@ -135,9 +154,9 @@ scaling = [0.25, 0.85]
 ##### run simulation #####
 
 for i in opts_scaling
-    investment_simulation(i, n, wacc, electricity_price, pj)
+    investment_simulation(i, n, wacc, electricity_price, pjs[5])
 end
 
 ##### benchmark function runtime #####
 
-@btime investment_simulation(opts_scaling[1], n, wacc, electricity_price, pj)
+@btime investment_simulation(opts_scaling[2], n, wacc, electricity_price, pjs[5])
