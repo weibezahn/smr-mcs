@@ -22,6 +22,8 @@ function to generate random variables
 """
 function gen_rand_var(opt_scaling::String, n::Int64, wacc::Vector, electricity_price::Vector, pj::project)
 
+    @info "generating random variables"
+
     # total time of reactor project, i.e., construction and operating time
     total_time = pj.time[1] + pj.time[2]
 
@@ -56,9 +58,7 @@ function gen_rand_var(opt_scaling::String, n::Int64, wacc::Vector, electricity_p
                 @error("Option for the scaling method is unknown.")
             end
 
-
     # output
-    @info("random variables generated")
     return(rand_wacc,rand_electricity_price,rand_loadfactor,rand_investment)
 
 end
@@ -67,6 +67,8 @@ end
 function for Monte Carlo runs
 """
 function mc_run(n::Int64, pj::project, rand_var)
+
+    @info "running Monte Carlo simulation"
 
     # project data
         # total time of reactor project, i.e., construction and operating time
@@ -119,7 +121,6 @@ function mc_run(n::Int64, pj::project, rand_var)
         end
 
     # output
-    @info("Monte Carlo runs complete")
     return(disc_cash_out,disc_cash_net,disc_electricity)
 
 end
@@ -129,7 +130,7 @@ function to calculate NPV and LCOE
 """
 function npv_lcoe(disc_res)
  
-    @info("calculating NPV and LCOE")
+    @info "calculating NPV and LCOE"
 
     disc_cash_out = disc_res[1]
     disc_cash_net = disc_res[2]

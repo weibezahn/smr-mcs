@@ -28,11 +28,23 @@ include("data.jl");
 
 ##### run simulation #####
 
-for i in opts_scaling
-    investment_simulation(i, n, wacc, electricity_price, pjs[5])
-end
+# initialize result variables
+npv_results = DataFrame();
+lcoe_results = DataFrame();
 
-result = investment_simulation(opts_scaling[2], n, wacc, electricity_price, pjs[5]);
+# choose scaling option
+opt_scaling = opts_scaling[2]
+
+# run simulation for all projects
+for p in eachindex(pjs)
+    @info("running simulation for", p, project = pjs[p].name)
+    results = investment_simulation(opt_scaling, n, wacc, electricity_price, pjs[p])
+    # normalize NPV to plant capacity [USD/MW]
+    npv_results.res = vec(results[1] / pjs[p].plant_capacity)
+    rename!(npv_results,:res => pjs[p].name)
+    lcoe_results.res = vec(results[2])
+    rename!(lcoe_results,:res => pjs[p].name)
+end
 
 ##### benchmark function runtime #####
 
