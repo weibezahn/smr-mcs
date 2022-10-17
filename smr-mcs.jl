@@ -37,7 +37,7 @@ opt_scaling = opts_scaling[2]
 
 # run simulation for all projects
 for p in eachindex(pjs)
-    @info("running simulation for", p, project = pjs[p].name)
+    @info("running simulation for", p, name = pjs[p].name)
     results = investment_simulation(opt_scaling, n, wacc, electricity_price, pjs[p])
     # normalize NPV to plant capacity [USD/MW]
     npv_results.res = vec(results[1] / pjs[p].plant_capacity)
