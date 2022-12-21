@@ -20,7 +20,7 @@ end
 """
 function to generate random variables
 """
-function gen_rand_var(opt_scaling::String, n::Int64, wacc::Vector, electricity_price::Vector, pj::project)
+function gen_rand_vars(opt_scaling::String, n::Int64, wacc::Vector, electricity_price::Vector, pj::project)
 
     @info "generating random variables"
 
@@ -59,14 +59,14 @@ function gen_rand_var(opt_scaling::String, n::Int64, wacc::Vector, electricity_p
             end
 
     # output
-    return(rand_wacc,rand_electricity_price,rand_loadfactor,rand_investment)
+    return(wacc = rand_wacc, electricity_price = rand_electricity_price, loadfactor = rand_loadfactor, investment = rand_investment)
 
 end
 
 """
 function for Monte Carlo runs
 """
-function mc_run(n::Int64, pj::project, rand_var)
+function mc_run(n::Int64, pj::project, rand_vars)
 
     @info "running Monte Carlo simulation"
 
@@ -81,10 +81,10 @@ function mc_run(n::Int64, pj::project, rand_var)
 
     # initialize variables
         # random variables
-        rand_wacc = rand_var[1]
-        rand_electricity_price = rand_var[2]
-        rand_loadfactor = rand_var[3]
-        rand_investment = rand_var[4]
+        rand_wacc = rand_vars.wacc
+        rand_electricity_price = rand_vars.electricity_price
+        rand_loadfactor = rand_vars.loadfactor
+        rand_investment = rand_vars.investment
         # cash inflow
         cash_in = zeros(Float64, n, total_time)
         # cash outflow
@@ -121,7 +121,7 @@ function mc_run(n::Int64, pj::project, rand_var)
         end
 
     # output
-    return(disc_cash_out,disc_cash_net,disc_electricity)
+    return(disc_cash_out = disc_cash_out, disc_cash_net = disc_cash_net, disc_electricity = disc_electricity)
 
 end
 
@@ -132,30 +132,27 @@ function npv_lcoe(disc_res)
  
     @info "calculating NPV and LCOE"
 
-    disc_cash_out = disc_res[1]
-    disc_cash_net = disc_res[2]
-    disc_electricity = disc_res[3]
+    disc_cash_out = disc_res.disc_cash_out
+    disc_cash_net = disc_res.disc_cash_net
+    disc_electricity = disc_res.disc_electricity
 
     npv = sum(disc_cash_net,dims=2)
     lcoe = sum(disc_cash_out,dims=2) ./ sum(disc_electricity,dims=2)
 
-    return(npv,lcoe)
+    return(npv = npv, lcoe = lcoe)
 
 end
 
 """
 function for Monte Carlo investment simulation
 """
-function investment_simulation(opt_scaling::String, n::Int64, wacc::Vector, electricity_price::Vector, pj::project)
-
-    # generate random variables
-    rand_var = gen_rand_var(opt_scaling, n, wacc, electricity_price, pj)
+function investment_simulation(pj::project, rand_vars)
 
     # interest during construction factor calculation [Rothwell (2016): Economics of Nuclear Power, Eq. (3.3.8)]
         # idc = .5 * rand_wacc * pj.time[1] + 1/6 * (rand_wacc .^ 2) * (pj.time[1]^2)
     
     # run the Monte Carlo simulation
-    disc_res= mc_run(n, pj, rand_var)
+    disc_res = mc_run(n, pj, rand_vars)
 
     # NPV and LCOE calculation
     res = npv_lcoe(disc_res)
