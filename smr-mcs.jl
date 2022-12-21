@@ -65,7 +65,7 @@ using LinearAlgebra
     # total-effect sensitivity index
     sensitivity_index(sensi_res_A, sensi_res_B, sensi_res_C) = 1 - (sensi_res_B ⋅ sensi_res_C - mean(sensi_res_A)^2) / (sensi_res_A ⋅ sensi_res_A - mean(sensi_res_A)^2)
 
-# testing for BWRX-300 and Nuscale
+# testing for Nuscale and Roulstone
 
     # generate random variable matrices A, B, C
     rand_vars_A = gen_rand_vars(opt_scaling, n, wacc, electricity_price, pjs[5]);
