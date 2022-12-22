@@ -61,9 +61,9 @@ using BenchmarkTools
 using LinearAlgebra
 
     # first-order sensitivity index
-    sensitivity_index(sensi_res_A, sensi_res_C) = (sensi_res_A ⋅ sensi_res_C - mean(sensi_res_A)^2) / (sensi_res_A ⋅ sensi_res_A - mean(sensi_res_A)^2)
+    sensitivity_index(sensi_res_A, sensi_res_C) = (((sensi_res_A ⋅ sensi_res_C) / length(sensi_res_A)) - mean(sensi_res_A)^2) / (((sensi_res_A ⋅ sensi_res_A) / length(sensi_res_A)) - mean(sensi_res_A)^2)
     # total-effect sensitivity index
-    sensitivity_index(sensi_res_A, sensi_res_B, sensi_res_C) = 1 - (sensi_res_B ⋅ sensi_res_C - mean(sensi_res_A)^2) / (sensi_res_A ⋅ sensi_res_A - mean(sensi_res_A)^2)
+    sensitivity_index(sensi_res_A, sensi_res_B, sensi_res_C) = 1 - (((sensi_res_B ⋅ sensi_res_C) / length(sensi_res_A)) - mean(sensi_res_A)^2) / (((sensi_res_A ⋅ sensi_res_A) / length(sensi_res_A)) - mean(sensi_res_A)^2)
 
 # testing for Nuscale and Roulstone
 
