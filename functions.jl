@@ -18,7 +18,16 @@ end
 ##### defining functions #####
 
 """
-function to generate random variables
+The gen_rand_vars function generates random variables for a given investment project, pj, based on a specified scaling option, opt_scaling, the number of simulations to run, n, a range of weighted average cost of capital (WACC) values, wacc, and a range of electricity price values, electricity_price.
+The total time of the reactor project, which is the sum of the construction time and operating time, is calculated by adding the elements at index 1 and 2 of the pj.time vector.
+Next, the function generates uniformly distributed random variables for the WACC, electricity price, and load factor using the rand function. The range of values for each variable is determined by the input ranges of wacc and electricity_price, and the pj.loadfactor attribute.
+The function then generates random project-specific variables based on the opt_scaling input. The function has four different branches of execution based on the value of opt_scaling.
+    If opt_scaling is "Manufacturer", the function uses manufacturer estimates to calculate a deterministic investment cost, rand_investment, which is the product of pj.investment, pj.plant_capacity, and ones(n) (where ones(n) is an array of n ones) multiplied by (1-pj.learning_factor)
+    If opt_scaling is "Roulstone", the function uses Roulstone scaling to calculate a random investment cost, rand_investment, which is the product of pj.reference_pj[1], pj.reference_pj[2], (1-pj.learning_factor), (pj.plant_capacity/pj.reference_pj[2]) raised to the power of a random scaling factor, rand_scaling, within the range specified in the scaling input.
+    If opt_scaling is "Rothwell", the function uses Rothwell scaling to calculate a random investment cost, rand_investment, which is the product of pj.reference_pj[1], pj.reference_pj[2], (1-pj.learning_factor), (pj.plant_capacity/pj.reference_pj[2]) raised to the power of 1 + logarithm base 2 of rand_scaling which is calculated by the range specified in the scaling input
+    If opt_scaling is "uniform", the function uses a uniform scaling to calculate a random investment cost, rand_investment, which is a random value within the range specified in the scaling input
+    If the opt_scaling is not one of the above, the function print an error message, "Option for the scaling method is unknown."
+Finally, the function returns the generated random variables in the form of a named tuple with four fields: wacc, electricity_price, loadfactor, and investment and their corresponding values.
 """
 function gen_rand_vars(opt_scaling::String, n::Int64, wacc::Vector, electricity_price::Vector, pj::project)
 
@@ -64,7 +73,13 @@ function gen_rand_vars(opt_scaling::String, n::Int64, wacc::Vector, electricity_
 end
 
 """
-function for Monte Carlo runs
+The mc_run function performs a Monte Carlo simulation for an investment project, pj, based on a specified number of simulations to run, n, and a set of random variables, rand_vars.
+The function first initializes the total time of the reactor project, which is the sum of the construction time and operating time, and the fixed and variable operating and maintenance (O&M) costs.
+It then initializes variables for the random variables, cash inflow, cash outflow, cashflow, discounted cash outflow, NPV in period t, generated electricity, and discounted generated electricity.
+The function then enters a simulation loop that iterates over the total time of the project. For each time step, the function performs different calculations depending on whether the time step is before or after the construction time.
+    If the time step is before the construction time, the function calculates the cash outflow as the investment cost divided by the construction time, and cashflow as the difference between cash inflow and cash outflow.
+    If the time step is after the construction time, the function calculates the amount of electricity produced, cash inflow from electricity sales, cash outflow for O&M costs, cashflow, discounted cash outflow, discounted electricity.
+Finally, the function returns the results of the simulation in the form of a named tuple with three fields: disc_cash_out, disc_cash_net, and disc_electricity and their corresponding values.
 """
 function mc_run(n::Int64, pj::project, rand_vars)
 
@@ -126,7 +141,10 @@ function mc_run(n::Int64, pj::project, rand_vars)
 end
 
 """
-function to calculate NPV and LCOE
+The npv_lcoe function calculates the net present value (NPV) and levelized cost of electricity (LCOE) for a given input, disc_res. The input, disc_res, is assumed to be an object with three attributes: disc_cash_out, disc_cash_net, and disc_electricity.
+Next, the function creates three local variables disc_cash_out, disc_cash_net, and disc_electricity which are assigned the values of the corresponding attributes of the input disc_res.
+The NPV is then calculated by taking the sum of the disc_cash_net variable along the second dimension using the sum function. Similarly, the LCOE is calculated by taking the ratio of the sum of the disc_cash_out variable along the second dimension to the sum of the disc_electricity variable along the second dimension.
+Finally, the function returns a named tuple with two fields, npv and lcoe with the calculated values.
 """
 function npv_lcoe(disc_res)
  
@@ -144,7 +162,11 @@ function npv_lcoe(disc_res)
 end
 
 """
-function for Monte Carlo investment simulation
+The investment_simulation function simulates an investment project, given an instance of the project type pj and a set of random variables rand_vars.
+The function begins by calculating the interest during construction factor, idc, using a mathematical equation that is based on the random weighted average cost of capital (WACC) and the time of construction of the project, pj.time[1]. This calculation is done according to Rothwell (2016) in the book "Economics of Nuclear Power" (Equation 3.3.8).
+Next, the function runs a Monte Carlo simulation by calling the mc_run function and passing in the number of simulations to run, n, the project pj, and the set of random variables rand_vars. The function saves the results of the Monte Carlo simulation in the local variable disc_res.
+The function then calculates the net present value (NPV) and the levelized cost of electricity (LCOE) by calling the npv_lcoe function and passing in the disc_res variable as input. The results of this calculation are saved in the local variable res.
+The function then returns the results of the simulation in the form of the res variable.
 """
 function investment_simulation(pj::project, rand_vars)
 

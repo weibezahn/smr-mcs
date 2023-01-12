@@ -49,12 +49,6 @@ for p in eachindex(pjs)
     rename!(lcoe_results,:res => pjs[p].name)
 end
 
-##### benchmark function runtime #####
-
-using BenchmarkTools
-
-@btime investment_simulation(opts_scaling[2], n, wacc, electricity_price, pjs[5])
-
 ##### sensitivity analysis #####
 ##### testing stage        #####
 
@@ -110,3 +104,10 @@ using LinearAlgebra
         loadfactor = sensitivity_index(sensi_res_A[2], sensi_res_B[2], sensi_res_C3[2]),
         investment = sensitivity_index(sensi_res_A[2], sensi_res_B[2], sensi_res_C4[2])
         )
+
+##### benchmark function runtime #####
+
+# using BenchmarkTools
+
+# rand_vars = gen_rand_vars(opts_scaling[2], n, wacc, electricity_price, pjs[5])
+# @btime investment_simulation(pjs[5], rand_vars)
