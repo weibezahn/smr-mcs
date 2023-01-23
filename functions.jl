@@ -118,7 +118,6 @@ function mc_run(n::Int64, pj::project, rand_vars)
     # simulation loop
         for t in 1:total_time
             if t <= pj.time[1]
-                # cash_out[:,t] = pj.plant_capacity * rand_investment ./ pj.time[1] .* (1+idc)
                 cash_out[:,t] = rand_investment ./ pj.time[1]
                 cash_net[:,t] = cash_in[:,t] - cash_out[:,t]
             else
@@ -163,16 +162,12 @@ end
 
 """
 The investment_simulation function simulates an investment project, given an instance of the project type pj and a set of random variables rand_vars.
-The function begins by calculating the interest during construction factor, idc, using a mathematical equation that is based on the random weighted average cost of capital (WACC) and the time of construction of the project, pj.time[1]. This calculation is done according to Rothwell (2016) in the book "Economics of Nuclear Power" (Equation 3.3.8).
-Next, the function runs a Monte Carlo simulation by calling the mc_run function and passing in the number of simulations to run, n, the project pj, and the set of random variables rand_vars. The function saves the results of the Monte Carlo simulation in the local variable disc_res.
+The function runs a Monte Carlo simulation by calling the mc_run function and passing in the number of simulations to run, n, the project pj, and the set of random variables rand_vars. The function saves the results of the Monte Carlo simulation in the local variable disc_res.
 The function then calculates the net present value (NPV) and the levelized cost of electricity (LCOE) by calling the npv_lcoe function and passing in the disc_res variable as input. The results of this calculation are saved in the local variable res.
 The function then returns the results of the simulation in the form of the res variable.
 """
 function investment_simulation(pj::project, rand_vars)
-
-    # interest during construction factor calculation [Rothwell (2016): Economics of Nuclear Power, Eq. (3.3.8)]
-        # idc = .5 * rand_wacc * pj.time[1] + 1/6 * (rand_wacc .^ 2) * (pj.time[1]^2)
-    
+   
     # run the Monte Carlo simulation
     disc_res = mc_run(n, pj, rand_vars)
 
@@ -180,7 +175,76 @@ function investment_simulation(pj::project, rand_vars)
     res = npv_lcoe(disc_res)
 
     # output
-    @info "simulation results" pj.name pj.type NPV=mean(res[1]) LCOE=mean(res[2])
+    @info "simulation results" pj.name pj.type NPV = mean(res[1]) LCOE = mean(res[2])
     return(res)
+
+end
+
+# first-order sensitivity index
+si_first_order(A,B,AB) = round(mean(B .* (AB .- A)) / var(vcat(A, B), corrected = false), digits=4)
+
+# total-effect sensitivity index
+si_total_order(A,B,AB) = round(0.5 * mean((A .- AB).^2) / var(vcat(A, B), corrected = false), digits=4)
+
+function sensitivity_index(opt_scaling::String, n::Int64, wacc::Vector, electricity_price::Vector, pj::project)
+
+    # generate random variable matrices A and B
+    @info "generating matrix A"
+    rand_vars_A = gen_rand_vars(opt_scaling, n, wacc, electricity_price, pj);
+    @info "generating matrix B"
+    rand_vars_B = gen_rand_vars(opt_scaling, n, wacc, electricity_price, pj);
+
+    # build random variable matrices AB from A and B for each random variable
+    @info "building matrices AB"
+    rand_vars_AB1 = (wacc = rand_vars_B.wacc, electricity_price = rand_vars_A.electricity_price, loadfactor = rand_vars_A.loadfactor, investment = rand_vars_A.investment);
+    rand_vars_AB2 = (wacc = rand_vars_A.wacc, electricity_price = rand_vars_B.electricity_price, loadfactor = rand_vars_A.loadfactor, investment = rand_vars_A.investment);
+    rand_vars_AB3 = (wacc = rand_vars_A.wacc, electricity_price = rand_vars_A.electricity_price, loadfactor = rand_vars_B.loadfactor, investment = rand_vars_A.investment);
+    rand_vars_AB4 = (wacc = rand_vars_A.wacc, electricity_price = rand_vars_A.electricity_price, loadfactor = rand_vars_A.loadfactor, investment = rand_vars_B.investment);
+
+    # run Monte Carlo simulations for A, B, and AB
+    @info "matrix A:"
+    sensi_res_A = investment_simulation(pj, rand_vars_A);
+    @info "matrix B:"
+    sensi_res_B = investment_simulation(pj, rand_vars_B);
+    @info "matrix AB1"
+    sensi_res_AB1 = investment_simulation(pj, rand_vars_AB1);
+    @info "matrix AB2"
+    sensi_res_AB2 = investment_simulation(pj, rand_vars_AB2);
+    @info "matrix AB3"
+    sensi_res_AB3 = investment_simulation(pj, rand_vars_AB3);
+    @info "matrix AB4"
+    sensi_res_AB4 = investment_simulation(pj, rand_vars_AB4);
+
+    # sensitivity indices for NPV
+    s_npv = (
+        wacc = si_first_order(sensi_res_A[1], sensi_res_B[1], sensi_res_AB1[1]),
+        electricity_price = si_first_order(sensi_res_A[1], sensi_res_B[1], sensi_res_AB2[1]),
+        loadfactor = si_first_order(sensi_res_A[1], sensi_res_B[1], sensi_res_AB3[1]),
+        investment = si_first_order(sensi_res_A[1], sensi_res_B[1], sensi_res_AB4[1]),
+        )
+    st_npv = (
+        wacc = si_total_order(sensi_res_A[1], sensi_res_B[1], sensi_res_AB1[1]),
+        electricity_price = si_total_order(sensi_res_A[1], sensi_res_B[1], sensi_res_AB2[1]),
+        loadfactor = si_total_order(sensi_res_A[1], sensi_res_B[1], sensi_res_AB3[1]),
+        investment = si_total_order(sensi_res_A[1], sensi_res_B[1], sensi_res_AB4[1])
+        )
+
+    # sensitivity indices for LCOE
+    s_lcoe = (
+        wacc = si_first_order(sensi_res_A[2], sensi_res_B[2], sensi_res_AB1[2]),
+        electricity_price = si_first_order(sensi_res_A[2], sensi_res_B[2], sensi_res_AB2[2]),
+        loadfactor = si_first_order(sensi_res_A[2], sensi_res_B[2], sensi_res_AB3[2]),
+        investment = si_first_order(sensi_res_A[2], sensi_res_B[2], sensi_res_AB4[2]),
+        )
+    st_lcoe = (
+        wacc = si_total_order(sensi_res_A[2], sensi_res_B[2], sensi_res_AB1[2]),
+        electricity_price = si_total_order(sensi_res_A[2], sensi_res_B[2], sensi_res_AB2[2]),
+        loadfactor = si_total_order(sensi_res_A[2], sensi_res_B[2], sensi_res_AB3[2]),
+        investment = si_total_order(sensi_res_A[2], sensi_res_B[2], sensi_res_AB4[2])
+        )
+    
+    # output
+    @info "sensitivity results" pj.name pj.type S_NPV = s_npv ST_NPV = st_npv S_LCOE = s_lcoe ST_LCOE = st_lcoe
+    return(s_npv = s_npv, st_npv = st_npv, s_lcoe = s_lcoe, st_lcoe = st_lcoe)
 
 end

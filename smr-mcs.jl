@@ -4,9 +4,11 @@ Pkg.activate(pwd())
 using Statistics
 
 ##### load functions #####
+@info("Loading functions")
 include("functions.jl");
 
 ##### load project data #####
+@info("loading data")
 include("data.jl");
 
 ##### further simulation data #####
@@ -26,14 +28,14 @@ include("data.jl");
         # scaling parameter, lower and upper bound of random variable
         scaling = [0.25, 0.85]
 
+    # choose scaling option
+    opt_scaling = opts_scaling[2]
+
 ##### run simulation #####
 
 # initialize result variables
 npv_results = DataFrame();
 lcoe_results = DataFrame();
-
-# choose scaling option
-opt_scaling = opts_scaling[2]
 
 # run simulation for all projects
 for p in eachindex(pjs)
@@ -50,64 +52,21 @@ for p in eachindex(pjs)
 end
 
 ##### sensitivity analysis #####
-##### testing stage        #####
 
-using LinearAlgebra
+# initialize results variables
+si_npv_results = DataFrame();
+si_npv_results.si = ["S", "S", "S", "S", "ST", "ST", "ST", "ST"];
+si_npv_results.var = ["wacc", "electricity_price", "loadfactor", "investment", "wacc", "electricity_price", "loadfactor", "investment"];
+si_lcoe_results = DataFrame();
+si_lcoe_results.si = ["S", "S", "S", "S", "ST", "ST", "ST", "ST"];
+si_lcoe_results.var = ["wacc", "electricity_price", "loadfactor", "investment", "wacc", "electricity_price", "loadfactor", "investment"];
 
-    # first-order sensitivity index
-    sensitivity_index(sensi_res_A, sensi_res_C) = (((sensi_res_A ⋅ sensi_res_C) / length(sensi_res_A)) - mean(sensi_res_A)^2) / (((sensi_res_A ⋅ sensi_res_A) / length(sensi_res_A)) - mean(sensi_res_A)^2)
-    # total-effect sensitivity index
-    sensitivity_index(sensi_res_A, sensi_res_B, sensi_res_C) = 1 - (((sensi_res_B ⋅ sensi_res_C) / length(sensi_res_A)) - mean(sensi_res_A)^2) / (((sensi_res_A ⋅ sensi_res_A) / length(sensi_res_A)) - mean(sensi_res_A)^2)
-
-# testing for Nuscale and Roulstone
-
-    # generate random variable matrices A, B, C
-    rand_vars_A = gen_rand_vars(opt_scaling, n, wacc, electricity_price, pjs[5]);
-    rand_vars_B = gen_rand_vars(opt_scaling, n, wacc, electricity_price, pjs[5]);
-    rand_vars_C1 = (wacc = rand_vars_A.wacc, electricity_price = rand_vars_B.electricity_price, loadfactor = rand_vars_B.loadfactor, investment = rand_vars_B.investment);
-    rand_vars_C2 = (wacc = rand_vars_B.wacc, electricity_price = rand_vars_A.electricity_price, loadfactor = rand_vars_B.loadfactor, investment = rand_vars_B.investment);
-    rand_vars_C3 = (wacc = rand_vars_B.wacc, electricity_price = rand_vars_B.electricity_price, loadfactor = rand_vars_A.loadfactor, investment = rand_vars_B.investment);
-    rand_vars_C4 = (wacc = rand_vars_B.wacc, electricity_price = rand_vars_B.electricity_price, loadfactor = rand_vars_B.loadfactor, investment = rand_vars_A.investment);
-
-    # run Monte Carlo simulations for A, B, C
-    sensi_res_A = investment_simulation(pjs[5], rand_vars_A);
-    sensi_res_B = investment_simulation(pjs[5], rand_vars_B);
-    sensi_res_C1 = investment_simulation(pjs[5], rand_vars_C1);
-    sensi_res_C2 = investment_simulation(pjs[5], rand_vars_C2);
-    sensi_res_C3 = investment_simulation(pjs[5], rand_vars_C3);
-    sensi_res_C4 = investment_simulation(pjs[5], rand_vars_C4);
-
-    # sensitivities for NPV
-    S_NPV = (
-        wacc = sensitivity_index(sensi_res_A[1], sensi_res_C1[1]),
-        electricity_price = sensitivity_index(sensi_res_A[1], sensi_res_C2[1]),
-        loadfactor = sensitivity_index(sensi_res_A[1], sensi_res_C3[1]),
-        investment = sensitivity_index(sensi_res_A[1], sensi_res_C4[1])
-        )
-    ST_NPV = (
-        wacc = sensitivity_index(sensi_res_A[1], sensi_res_B[1], sensi_res_C1[1]),
-        electricity_price = sensitivity_index(sensi_res_A[1], sensi_res_B[1], sensi_res_C2[1]),
-        loadfactor = sensitivity_index(sensi_res_A[1], sensi_res_B[1], sensi_res_C3[1]),
-        investment = sensitivity_index(sensi_res_A[1], sensi_res_B[1], sensi_res_C4[1])
-        )
-
-    # sensitivity for LCOE
-    S_LCOE = (
-        wacc = sensitivity_index(sensi_res_A[2], sensi_res_C1[2]),
-        electricity_price = sensitivity_index(sensi_res_A[2], sensi_res_C2[2]),
-        loadfactor = sensitivity_index(sensi_res_A[2], sensi_res_C3[2]),
-        investment = sensitivity_index(sensi_res_A[2], sensi_res_C4[2])
-        )
-    ST_LCOE = (
-        wacc = sensitivity_index(sensi_res_A[2], sensi_res_B[2], sensi_res_C1[2]),
-        electricity_price = sensitivity_index(sensi_res_A[2], sensi_res_B[2], sensi_res_C2[2]),
-        loadfactor = sensitivity_index(sensi_res_A[2], sensi_res_B[2], sensi_res_C3[2]),
-        investment = sensitivity_index(sensi_res_A[2], sensi_res_B[2], sensi_res_C4[2])
-        )
-
-##### benchmark function runtime #####
-
-# using BenchmarkTools
-
-# rand_vars = gen_rand_vars(opts_scaling[2], n, wacc, electricity_price, pjs[5])
-# @btime investment_simulation(pjs[5], rand_vars)
+# run sensitivity analysis for all projects
+for p in eachindex(pjs)
+    @info("running sensitivity analysis for", p, name = pjs[p].name)
+    si_results = sensitivity_index(opt_scaling, n, wacc, electricity_price, pjs[p])
+    si_npv_results.res = vcat(collect(si_results[1]),collect(si_results[2]))
+    rename!(si_npv_results,:res => pjs[p].name)
+    si_lcoe_results.res = vcat(collect(si_results[3]),collect(si_results[4]))
+    rename!(si_lcoe_results,:res => pjs[p].name)
+end
