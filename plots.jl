@@ -81,7 +81,7 @@ function si_plot(si_results, title::String)
     ax_s.xticklabelalign = (:right, :center);
     hmap_s = heatmap!(ax_s, data_s, colormap = :deep, colorrange = (0, 1));
     for i in 1:length(xticks), j in 1:length(yticks)
-        txtcolor = data_s[i, j] > 0.15 ? :white : :black
+        txtcolor = data_s[i, j] > 0.5 ? :white : :black
         text!(ax_s, "$(round(data_s[i,j], digits = 2))", position = (i, j),
             color = txtcolor, fontsize = 12, align = (:center, :center))
     end
@@ -94,7 +94,7 @@ function si_plot(si_results, title::String)
     ax_st.xticklabelalign = (:right, :center);
     hmap_st = heatmap!(ax_st, data_st, colormap = :deep, colorrange = (0, 1));
     for i in 1:length(xticks), j in 1:length(yticks)
-        txtcolor = data_st[i, j] > 0.15 ? :white : :black
+        txtcolor = data_st[i, j] > 0.5 ? :white : :black
         text!(ax_st, "$(round(data_st[i,j], digits = 2))", position = (i, j),
             color = txtcolor, fontsize = 12, align = (:center, :center))
     end
