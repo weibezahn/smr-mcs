@@ -181,10 +181,30 @@ function investment_simulation(pj::project, rand_vars)
 end
 
 # first-order sensitivity index
-si_first_order(A,B,AB) = round(mean(B .* (AB .- A)) / var(vcat(A, B), corrected = false), digits=4)
+function si_first_order(A,B,AB)
+    
+    si = mean(B .* (AB .- A)) / var(vcat(A, B), corrected = false)
+
+    if isapprox(si, -0.0, atol = 1e-2)
+        return 0.0
+    else
+        return si
+    end
+
+end
 
 # total-effect sensitivity index
-si_total_order(A,B,AB) = round(0.5 * mean((A .- AB).^2) / var(vcat(A, B), corrected = false), digits=4)
+function si_total_order(A,B,AB)
+    
+    si = 0.5 * mean((A .- AB).^2) / var(vcat(A, B), corrected = false)
+
+    if isapprox(si, -0.0, atol = 1e-2)
+        return 0.0
+    else
+        return si
+    end
+
+end
 
 function sensitivity_index(opt_scaling::String, n::Int64, wacc::Vector, electricity_price::Vector, pj::project)
 

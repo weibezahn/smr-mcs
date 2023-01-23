@@ -14,7 +14,7 @@ include("data.jl");
 ##### further simulation data #####
 
     # number of Monte Carlo runs
-    n = Int64(1e6)
+    n = Int64(1e5)
 
     # wholesale electricity price [USD/MWh], lower and upper bound of rand variable
     electricity_price = [52.22, 95.84]
@@ -51,6 +51,9 @@ for p in eachindex(pjs)
     rename!(lcoe_results,:res => pjs[p].name)
 end
 
+CSV.write("mcs-npv_results.csv", npv_results)
+CSV.write("mcs-lcoe_results.csv", lcoe_results)
+
 ##### sensitivity analysis #####
 
 # initialize results variables
@@ -70,3 +73,6 @@ for p in eachindex(pjs)
     si_lcoe_results.res = vcat(collect(si_results[3]),collect(si_results[4]))
     rename!(si_lcoe_results,:res => pjs[p].name)
 end
+
+CSV.write("si-npv_results.csv", si_npv_results)
+CSV.write("si-lcoe_results.csv", si_lcoe_results)
