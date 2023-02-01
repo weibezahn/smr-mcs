@@ -2,4 +2,4 @@
 *.png
 *.pdf
 *.jpg
-output/*
+_output/*
