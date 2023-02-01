@@ -2,112 +2,104 @@
 # requires results from the main file
 
 using CairoMakie
+include("functions_plots.jl")
+
+##### comparison plot for Roulstone vs. Rothwell scaling #####
+
+# α range
+x = 0:0.01:1;
+# β Roulstone
+y = x;
+# β Rothwell
+z = 1 .+ log.(x)/log(2);
+
+# define plot
+fig_theory = Figure();
+
+ax_theory = Axis(fig_theory[1,1], xlabel = "α", ylabel = "β(α)");
+xlims!(0, 1)
+ylims!(-2, 1)
+
+roulstone = lines!(x, y, label = "Roulstone", linewidth = 3);
+rothwell = lines!(x, z, lable = "Rothwell", linewidth = 3);
+hlines!(ax_theory, [0], color = :gray);
+
+Legend(fig_theory[1, 1],
+    [roulstone, rothwell],
+    [L"\text{Roulstone:} β = α", L"\text{Rothwell:} β = 1+\frac{ln(α)}{ln(2)}"],
+    tellheight = false,
+    tellwidth = false,
+    halign = :right, valign = :bottom,
+    framevisible = false, orientation = :vertical);
+
+fig_theory
+save("$outputpath/fig-theory.pdf", fig_theory);
+
+##### comparison plot for investment cost from manufacturers vs. estimation #####
+
+# choose scaling parameters for the plot
+scaling_plot = [0.25, 0.85];
+
+fig_invest_comparison = investment_plot(pjs, scaling_plot)
+save("$outputpath/fig-investment_comparison.pdf", fig_invest_comparison);
 
 ##### boxplots Monte Carlo simulation results #####
 # requires results for all 15 reactor concepts
 
-function mcs_plot(mcs_results, title::String, ylabel::String)
-
-    xticks_wc = names(mcs_results)[1:9];
-    xticks_ht = names(mcs_results)[10:12];
-    xticks_sf = names(mcs_results)[13:15];
-
-    mcs_boxplot = Figure();
-
-    ax_wc = Axis(mcs_boxplot[1,1], xticks = (1:length(xticks_wc), xticks_wc), ylabel = ylabel);
-    ax_wc.xticklabelrotation = π / 3;
-    ax_wc.yticklabelrotation = π / 2;
-    ax_wc.xticklabelalign = (:right, :center);
-
-    for i in 1:length(xticks_wc)
-        boxplot!(ax_wc, fill(i,n), mcs_results[!,i], color = :green)
-    end;
-
-    Label(mcs_boxplot[1, 1, Top()], "BWR & PWR types", font = "Noto Sans Bold", padding = (0, 6, 6, 0))
-
-    ax_ht = Axis(mcs_boxplot[1,2], xticks = (1:length(xticks_ht), xticks_ht));
-    ax_ht.xticklabelrotation = π / 3;
-    ax_ht.yticklabelrotation = π / 2;
-    ax_ht.xticklabelalign = (:right, :center);
-
-    for i in 1:length(xticks_ht)
-        boxplot!(ax_ht, fill(i,n), mcs_results[!,i+length(xticks_wc)], color = :red)
-    end;
-
-    Label(mcs_boxplot[1, 2, Top()], "HTR types", font = "Noto Sans Bold", padding = (0, 6, 6, 0));
-
-    ax_sf = Axis(mcs_boxplot[1,3], xticks = (1:length(xticks_sf), xticks_sf));
-    ax_sf.xticklabelrotation = π / 3;
-    ax_sf.yticklabelrotation = π / 2;
-    ax_sf.xticklabelalign = (:right, :center);
-
-    for i in 1:length(xticks_sf)
-        boxplot!(ax_sf, fill(i,n), mcs_results[!,i+length(xticks_wc)+length(xticks_sf)], color = :orange)
-    end;
-
-    Label(mcs_boxplot[1, 3, Top()], "SFR types", font = "Noto Sans Bold", padding = (0, 6, 6, 0));
-
-    Label(mcs_boxplot[0, :], title, fontsize = 24, font = "Noto Sans Bold", color = (:black, 0.25))
-
-    colsize!(mcs_boxplot.layout, 1, Relative(6/10));
-    colsize!(mcs_boxplot.layout, 2, Relative(2/10));
-    colsize!(mcs_boxplot.layout, 3, Relative(2/10));
-
-    return mcs_boxplot
-
-end
-
 fig_mcs_npv = mcs_plot(npv_results, "NPV", "[USD/MW]")
 fig_mcs_lcoe = mcs_plot(lcoe_results, "LCOE", "[USD/MWh]")
 
-save("fig-mcs_npv.pdf", fig_mcs_npv)
-save("fig-mcs_lcoe.pdf", fig_mcs_lcoe)
+save("$outputpath/fig-mcs_npv-$opt_scaling.pdf", fig_mcs_npv);
+save("$outputpath/fig-mcs_lcoe-$opt_scaling.pdf", fig_mcs_lcoe);
 
 ##### heatmaps sensitivity indices #####
-
-function si_plot(si_results, title::String)
-
-    si_s = filter(:si => index -> index == "S", si_results);
-    si_st = filter(:si => index -> index == "ST", si_results);
-    xticks = si_s.var;
-    yticks = names(si_results)[3:end];
-    data_s = Matrix(si_s[:,3:end]);
-    data_st = Matrix(si_st[:,3:end]);
-
-    si_heatmap = Figure();
-
-    ax_s = Axis(si_heatmap[1, 1], xticks = (1:length(xticks), xticks), yticks = (1:length(yticks), yticks));
-    ax_s.xticklabelrotation = π / 3;
-    ax_s.xticklabelalign = (:right, :center);
-    hmap_s = heatmap!(ax_s, data_s, colormap = :deep, colorrange = (0, 1));
-    for i in 1:length(xticks), j in 1:length(yticks)
-        txtcolor = data_s[i, j] > 0.5 ? :white : :black
-        text!(ax_s, "$(round(data_s[i,j], digits = 2))", position = (i, j),
-            color = txtcolor, fontsize = 12, align = (:center, :center))
-    end
-    Label(si_heatmap[1, 1, Top()], "first-oder effect", font = "Noto Sans Bold", padding = (0, 6, 6, 0))
-
-    Colorbar(si_heatmap[1, 2], hmap_s; width = 15, ticksize = 15);
-
-    ax_st = Axis(si_heatmap[1, 3], xticks = (1:length(xticks), xticks), yticks = (1:length(yticks), yticks), yaxisposition = :right);
-    ax_st.xticklabelrotation = π / 3;
-    ax_st.xticklabelalign = (:right, :center);
-    hmap_st = heatmap!(ax_st, data_st, colormap = :deep, colorrange = (0, 1));
-    for i in 1:length(xticks), j in 1:length(yticks)
-        txtcolor = data_st[i, j] > 0.5 ? :white : :black
-        text!(ax_st, "$(round(data_st[i,j], digits = 2))", position = (i, j),
-            color = txtcolor, fontsize = 12, align = (:center, :center))
-    end
-    Label(si_heatmap[1, 3, Top()], "total-oder effect", font = "Noto Sans Bold", padding = (0, 6, 6, 0));
-
-    Label(si_heatmap[0, :], title, fontsize = 24, font = "Noto Sans Bold", color = (:black, 0.25));
-
-    return si_heatmap
-
-end
+# requires sensitvity results
 
 fig_si_npv = si_plot(si_npv_results, "NPV")
 fig_si_lcoe = si_plot(si_lcoe_results, "LCOE")
 
-save("fig-si_npv.pdf", fig_si_npv)
-save("fig-si_lcoe.pdf", fig_si_lcoe)
+save("$outputpath/fig-si_npv-$opt_scaling.pdf", fig_si_npv);
+save("$outputpath/fig-si_lcoe-$opt_scaling.pdf", fig_si_lcoe);
+
+##### lcoe comparison plot #####
+# requires results for all 15 reactor concepts
+
+using CSV, DataFrames
+
+# read LCOE data from CSV into a dataframe
+lcoe_dat = CSV.File("$inputpath/lcoe_data.csv") |> DataFrame;
+
+# read LCOE data from project simulations
+lcoe_bounds = select(lcoe_summary, [:q25, :q75]);
+
+# collect plot data
+lcoe_plot_data = vcat(
+    select(lcoe_dat, [:technology, :lower_bound, :upper_bound]),
+    DataFrame(technology = ["BWR & PWR SMRs", "HTR SMRs", "SFR SMRs"],
+    lower_bound = [minimum(lcoe_bounds[1:9,:q25]), minimum(lcoe_bounds[10:12,:q25]), minimum(lcoe_bounds[13:15,:q25])],
+    upper_bound = [maximum(lcoe_bounds[1:9,:q75]), maximum(lcoe_bounds[10:12,:q75]), maximum(lcoe_bounds[13:15,:q75])])
+);
+
+# define LCOE plot
+xlabel = "[USD/MWh]";
+yticks = lcoe_plot_data[!,:technology];
+
+col = vcat(fill(1,8),fill(2,4),3,4,5);
+colormap = [:darkgreen, :darkblue];
+
+fig_lcoe_comparison = Figure();
+ax_lcoe = Axis(fig_lcoe_comparison[1,1], yticks = (1:length(yticks), yticks), xscale = log10, xlabel = xlabel);
+
+xlims!(10, 10000)
+
+rangebars!(ax_lcoe, 1:length(yticks), lcoe_plot_data[!,2], lcoe_plot_data[!,3], linewidth = 6, whiskerwidth = 8, direction = :x, color = col);
+hlines!(ax_lcoe, [8.5, 12.5], linestyle = :dash, color = :red);
+text!([7500,7500,15], [4, 10.5, 14]; text = ["Renewables\n(LAZARD)", "Conventionals\n(LAZARD)", "SMR Tech.\n(Roulstone)"], align = (:center, :center), justification = :center, rotation = π/2);
+
+text!(lcoe_plot_data[!,2], 1:length(yticks), text = string.(round.(Int,lcoe_plot_data[!,2])), align = (:right, :center), offset = (-10,0));
+text!(lcoe_plot_data[!,3], 1:length(yticks), text = string.(round.(Int,lcoe_plot_data[!,3])), align = (:left, :center), offset = (10,0));
+
+Label(fig_lcoe_comparison[1, 1, Top()], "LCOE Comparison", font = "Noto Sans Bold", padding = (0, 6, 6, 0));
+
+fig_lcoe_comparison
+save("$outputpath/fig-lcoe_comparison.pdf", fig_lcoe_comparison);

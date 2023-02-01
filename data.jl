@@ -2,8 +2,10 @@
 
 using CSV, DataFrames
 
-pjs_dat = CSV.File("project_data.csv") |> DataFrame # read project data from CSV into a dataframe
-pjs = []                                            # initialize empty projects vector
+# read project data from CSV into a dataframe
+pjs_dat = CSV.File("$inputpath/project_data.csv") |> DataFrame
+# initialize empty projects vector
+pjs = []
 
 # populate array with projects using project data input
 for i in 1:nrow(pjs_dat)

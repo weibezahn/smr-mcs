@@ -1,3 +1,5 @@
 *.xlsx
 *.png
 *.pdf
+*.jpg
+output/*

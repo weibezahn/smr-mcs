@@ -44,16 +44,16 @@ function gen_rand_vars(opt_scaling::String, n::Int64, wacc::Vector, electricity_
     # generation of uniformly distributed random project specific variables
         # scaling case distinction
             # Note that the scaling parameter here are converted such that Rothwell and Roulstone coincide.
-            if opt_scaling == "Manufacturer"
+            if opt_scaling == "manufacturer"
                 @info("using manufacturer estimates")
                 # deterministic investment cost based on manufacturer estimates [USD]
                 rand_investment = pj.investment * pj.plant_capacity * ones(n) * (1-pj.learning_factor)
-            elseif opt_scaling == "Roulstone"
+            elseif opt_scaling == "roulstone"
                 @info("using Roulstone scaling")
                 # random investment cost based on Roulstone [USD]
                 rand_scaling = scaling[1] .+ (scaling[2] - scaling[1]) .* rand(n,1)
                 rand_investment = pj.reference_pj[1] * pj.reference_pj[2] * (1-pj.learning_factor) * (pj.plant_capacity/pj.reference_pj[2]) .^ (rand_scaling)
-            elseif opt_scaling == "Rothwell"
+            elseif opt_scaling == "rothwell"
                 @info("using Rothwell scaling")
                 # random investment cost based on Rothwell [USD]
                 rand_scaling = (2^(scaling[1]-1) + (2^(scaling[2]-1) - 2^(scaling[1]-1))) .* rand(n,1)
@@ -266,5 +266,21 @@ function sensitivity_index(opt_scaling::String, n::Int64, wacc::Vector, electric
     # output
     @info "sensitivity results" pj.name pj.type S_NPV = s_npv ST_NPV = st_npv S_LCOE = s_lcoe ST_LCOE = st_lcoe
     return(s_npv = s_npv, st_npv = st_npv, s_lcoe = s_lcoe, st_lcoe = st_lcoe)
+
+end
+
+function gen_scaled_investment(scaling::Vector, pj::project)
+    
+    # generation of project specific scaled investment cost ranges
+    # note that the scaling parameter here are converted such that Rothwell and Roulstone coincide.
+        # deterministic investment cost based on manufacturer estimates [USD/MW]
+        scaled_investment = pj.investment
+        # scaled investment cost based on Roulstone [USD/MW]
+        scaled_investment = vcat(scaled_investment, pj.reference_pj[1] * pj.reference_pj[2] * (1-pj.learning_factor) * (pj.plant_capacity/pj.reference_pj[2]) .^ scaling / pj.plant_capacity)
+        # scaled investment cost based on Rothwell [USD/MW]
+        scaled_investment = vcat(scaled_investment, pj.reference_pj[1] * pj.reference_pj[2] * (1-pj.learning_factor) * (pj.plant_capacity/pj.reference_pj[2]) .^ (1 .+ log.(scaling) ./ log(2)) / pj.plant_capacity)
+
+    # output
+    return(scaled_investment = scaled_investment)
 
 end

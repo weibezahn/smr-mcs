@@ -1,0 +1,13 @@
+technology;lower_bound;upper_bound;source
+PV (rt/res);147;221;LAZARD LCOE 15.0
+PV (rt/ci);67;180;LAZARD LCOE 15.0
+PV (rt/com);59;91;LAZARD LCOE 15.0
+PV (ut/crys);30;41;LAZARD LCOE 15.0
+PV (ut/tf);28;37;LAZARD LCOE 15.0
+Sol. Thermal (w/ st);126;156;LAZARD LCOE 15.0
+Geothermal;56;93;LAZARD LCOE 15.0
+Wind;26;50;LAZARD LCOE 15.0
+Gas (peaking);151;196;LAZARD LCOE 15.0
+Nuclear;131;204;LAZARD LCOE 15.0
+Coal;65;152;LAZARD LCOE 15.0
+Gas (cc);45;74;LAZARD LCOE 15.0
