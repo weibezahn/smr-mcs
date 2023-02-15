@@ -187,6 +187,8 @@ function si_first_order(A,B,AB)
 
     if isapprox(si, -0.0, atol = 1e-2)
         return 0.0
+    elseif si > 1.0
+        return 1.0
     else
         return si
     end
@@ -200,6 +202,8 @@ function si_total_order(A,B,AB)
 
     if isapprox(si, -0.0, atol = 1e-2)
         return 0.0
+    elseif si > 1.0
+        return 1.0
     else
         return si
     end

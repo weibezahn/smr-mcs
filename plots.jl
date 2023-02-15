@@ -81,6 +81,17 @@ lcoe_plot_data = vcat(
 );
 
 # define LCOE plot
+if opt_scaling == "manufacturer"
+    plot_scaling = "Manufacturer";
+elseif opt_scaling == "roulstone"
+    plot_scaling = "Roulstone";
+elseif opt_scaling == "rothwell"
+    plot_scaling = "Rothwell";
+elseif opt_scaling == "uniform"
+    plot_scaling = "uniform";
+else
+    @error("scaling not defined")
+end
 xlabel = "[USD/MWh]";
 yticks = lcoe_plot_data[!,:technology];
 
@@ -94,7 +105,7 @@ xlims!(10, 10000)
 
 rangebars!(ax_lcoe, 1:length(yticks), lcoe_plot_data[!,2], lcoe_plot_data[!,3], linewidth = 6, whiskerwidth = 8, direction = :x, color = col);
 hlines!(ax_lcoe, [8.5, 12.5], linestyle = :dash, color = :red);
-text!([7500,7500,15], [4, 10.5, 14]; text = ["Renewables\n(LAZARD)", "Conventionals\n(LAZARD)", "SMR Tech.\n(Roulstone)"], align = (:center, :center), justification = :center, rotation = π/2);
+text!([7500,7500,15], [4, 10.5, 14]; text = ["Renewables\n(LAZARD)", "Conventionals\n(LAZARD)", "SMR Tech.\n($plot_scaling)"], align = (:center, :center), justification = :center, rotation = π/2);
 
 text!(lcoe_plot_data[!,2], 1:length(yticks), text = string.(round.(Int,lcoe_plot_data[!,2])), align = (:right, :center), offset = (-10,0));
 text!(lcoe_plot_data[!,3], 1:length(yticks), text = string.(round.(Int,lcoe_plot_data[!,3])), align = (:left, :center), offset = (10,0));
@@ -102,4 +113,4 @@ text!(lcoe_plot_data[!,3], 1:length(yticks), text = string.(round.(Int,lcoe_plot
 Label(fig_lcoe_comparison[1, 1, Top()], "LCOE Comparison", font = "Noto Sans Bold", padding = (0, 6, 6, 0));
 
 fig_lcoe_comparison
-save("$outputpath/fig-lcoe_comparison.pdf", fig_lcoe_comparison);
+save("$outputpath/fig-lcoe_comparison-$opt_scaling.pdf", fig_lcoe_comparison);

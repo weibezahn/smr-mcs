@@ -1,0 +1,15 @@
+#!/bin/bash --login
+#$ -cwd
+#$ -N smr-mcs
+#$ -o /net/work/weibeza/smr-mcs/_output/$JOB_ID.$TASK_ID.out
+#$ -j y
+#$ -l h_rt=20000
+#$ -l mem_free=64G
+#$ -pe mp 1
+#$ -m bae
+#$ -M jew@wip.tu-berlin.de
+
+module purge
+module add julia/1.7.3
+
+julia /net/work/weibeza/smr-mcs/job.jl $par_job
