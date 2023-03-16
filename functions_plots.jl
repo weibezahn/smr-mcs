@@ -1,5 +1,9 @@
 """
-function to generate investment cost comparison plot for manufacturer vs. estimated costs
+The investment_plot function generates a comparison plot of investment values for manufacturer vs. estimated costs for multiple projects. The function takes in two arguments: a vector pjs containing project objects to be compared, and a boolean scaling_plot which indicates whether to scale the investment values by the project capacity.
+The function first generates scaled investment values for all projects using the gen_scaled_investment function, and stores them in a DataFrame. The DataFrame columns are named after the project names.
+The function then creates a new figure object and defines the x-axis label and y-axis tick labels based on the input DataFrame.
+The function then plots the investment values using three different plot types: scatter for the manufacturer's investment values, and rangebars for the other two project's investment values. The rangebars represent the minimum and maximum investment values for each project.
+Finally, the function adds a legend to the plot and returns the figure object.
 """
 function investment_plot(pjs, scaling_plot)
 
@@ -36,7 +40,11 @@ function investment_plot(pjs, scaling_plot)
 end
 
 """
-function to generate Monte Carlo simulation result plots
+The mcs_plot function creates a box plot figure for Monte Carlo simulation results organized by three categories of nuclear reactor types: BWR & PWR, HTR, and SFR. The input arguments are:
+    mcs_results: a DataFrame containing the Monte Carlo simulation results. The rows represent individual runs, and the columns represent different reactor types and parameters.
+    title: a string specifying the title of the figure.
+    ylabel: a string specifying the label of the y-axis.
+The function generates a box plot for each of the three categories of reactor types. The x-axis of each box plot is labeled with the parameter names, and the y-axis is labeled with the ylabel argument. The color of the box plots depends on the reactor type. The figure has a title specified by the title argument, and each box plot has a label specified by the corresponding reactor type.
 """
 function mcs_plot(mcs_results, title::String, ylabel::String)
 
@@ -90,7 +98,13 @@ function mcs_plot(mcs_results, title::String, ylabel::String)
 end
 
 """
-function to generate sensitivity index result plots
+The function si_plot() takes in two arguments, si_results and title, and returns a heatmap figure displaying sensitivity indices.
+The si_results argument is expected to be a DataFrame containing the results of a sensitivity analysis, where each row corresponds to a different input variable and each column contains sensitivity indices for that variable.
+The title argument is a string used as the title of the resulting heatmap figure.
+The function filters the si_results DataFrame into two separate DataFrames, one for first-order sensitivity indices (si_s) and one for total-order sensitivity indices (si_st), and extracts the variable names and index values for the first variable column.
+The function then creates a new figure si_heatmap and initializes three axes. The first axis (ax_s) displays the first-order sensitivity indices heatmap, the second axis displays the colorbar for the first-order sensitivity indices, and the third axis (ax_st) displays the total-order sensitivity indices heatmap.
+The function populates the first-order and total-order sensitivity indices heatmaps with data using the heatmap! function from the Plots package, sets the tick labels and rotation, and adds text annotations showing the rounded sensitivity index values.
+The function also adds labels to the first-order and total-order sensitivity indices heatmaps and the title to the top of the figure. Finally, the function returns the resulting si_heatmap figure.
 """
 
 function si_plot(si_results, title::String)

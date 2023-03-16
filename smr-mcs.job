@@ -9,6 +9,8 @@
 #$ -m bae
 #$ -M jew@wip.tu-berlin.de
 
+echo $HOSTNAME
+
 module purge
 module add julia/1.7.3
 

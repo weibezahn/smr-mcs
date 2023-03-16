@@ -38,7 +38,7 @@ include("data.jl");
         @info("using scaling option $opt_scaling")
     else
         # define scaling option locally
-        opt_scaling = opts_scaling[1];
+        opt_scaling = opts_scaling[2];
     end
 
 ##### run simulation #####

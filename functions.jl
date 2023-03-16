@@ -1,7 +1,16 @@
 ##### defining structs #####
 
 """
-struct for investment project data
+The project struct is a mutable struct that represents an investment project. It has the following fields:
+    name: a string that specifies the investment concept.
+    type: a string that specifies the investment type.
+    investment: a floating-point number that represents the investment estimate by the manufacturer in USD/MW.
+    plant_capacity: a floating-point number that represents the plant capacity in MW.
+    learning_factor: a floating-point number that represents the learning factor.
+    time: an abstract vector that represents the project time in years, which includes the construction time and plant lifetime.
+    loadfactor: an abstract vector that represents the load factor. It includes the lower and upper bounds of a random variable.
+    operating_cost: an abstract vector that represents the O&M cost, including O&M fix cost in USD/MW, O&M variable cost in USD/MWh, and fuel cost in USD/MWh.
+    reference_pj: an abstract vector that represents the reference reactor, which includes investment costs in USD/MW and plant capacity in MW.
 """
 mutable struct project
     name::String                    # investment concept
@@ -180,36 +189,76 @@ function investment_simulation(pj::project, rand_vars)
 
 end
 
+"""
+The si_correct function takes in a sensitivity index value si and returns a corrected sensitivity index value.
+If si is approximately equal to negative zero (-0.0) with an absolute tolerance of 1e-2, the function returns a float 0.0. If si is greater than 1.0, the function returns 1.0. Otherwise, the function returns si unchanged.
+The purpose of this function is to correct any sensitivity index values that may be out of range or have unexpected floating point behavior due to numerical errors.
+"""
+function si_correct(si)
+
+    if isapprox(si, -0.0, atol = 1e-2)
+        return 0.0
+    elseif si > 1.0
+        return 1.0
+    else
+        return si
+    end
+
+end
+
+"""
+The si_first_order function calculates the first-order Sobol' index (also called variance-based sensitivity index) for a given random variable.
+The function takes three arguments, A, B, and AB, which represent random variable matrices.
+The first-order sensitivity index measures the impact of each individual random variable on the output of a simulation model.
+The function computes the first-order sensitivity index using the formula: mean(B .* (AB .- A)) / var(vcat(A, B), corrected = false).
+The function then applies a correction using the "si_correct" function to ensure that the sensitivity index is within the range of 0 and 1.
+The function returns the corrected first-order sensitivity index as a float value.
+Input Arguments
+    A: An array of output values corresponding to one set of random input values.
+    B: An array of output values corresponding to another set of random input values.
+    AB: A matrix of output values corresponding to the set of random input variables used for matrix A except for one variable coresponding to the random input used for matrix B. 
+"""
 # first-order sensitivity index
 function si_first_order(A,B,AB)
     
     si = mean(B .* (AB .- A)) / var(vcat(A, B), corrected = false)
-
-    if isapprox(si, -0.0, atol = 1e-2)
-        return 0.0
-    elseif si > 1.0
-        return 1.0
-    else
-        return si
-    end
+    si = si_correct(si)
+    return si
 
 end
 
+"""
+The si_total_order function computes the total-order Sobol' index (also called variance-based sensitivity index) for a given random variable.
+The function takes three arguments, A, B, and AB, which represent random variable matrices.
+The total-order sensitivity index is a measure of the impact of each input on the output, taking into account the effect of the input in combination with all other inputs.
+The function computes the total-order sensitivity index using the formula: si = 0.5 * mean((A .- AB).^2) / var(vcat(A, B), corrected = false).
+The function then applies a correction using the "si_correct" function to ensure that the sensitivity index is within the range of 0 and 1.
+The function returns the corrected total-order sensitivity index as a float value.
+Input Arguments
+    A: An array of output values corresponding to one set of random input values.
+    B: An array of output values corresponding to another set of random input values.
+    AB: A matrix of output values corresponding to the set of random input variables used for matrix A except for one variable coresponding to the random input used for matrix B.   
+"""
 # total-effect sensitivity index
 function si_total_order(A,B,AB)
     
     si = 0.5 * mean((A .- AB).^2) / var(vcat(A, B), corrected = false)
-
-    if isapprox(si, -0.0, atol = 1e-2)
-        return 0.0
-    elseif si > 1.0
-        return 1.0
-    else
-        return si
-    end
+    si = si_correct(si)
+    return si
 
 end
 
+"""
+The sensiticity_index function calculates sensitivity indices for a given project based on the input parameters. The function takes in five arguments:
+    opt_scaling: A string representing the type of optimization scaling to use.
+    n: An integer representing the number of simulations to run for each random variable.
+    wacc: A vector of doubles representing the weighted average cost of capital for each year of the project.
+    electricity_price: A vector of doubles representing the electricity prices for each year of the project.
+    pj: A project object containing all relevant information about the project.
+The function then generates two random variable matrices A and B using the gen_rand_vars function. It then builds four matrices AB from A and B for each random variable. The function then runs Monte Carlo simulations for A, B, and each AB matrix, using the investment_simulation function.
+The function then calculates sensitivity indices for both NPV and LCOE. The sensitivity indices are calculated separately for each random variable, and both first-order and total-order sensitivity indices are calculated. The resulting sensitivity indices are stored in tuples S_NPV, ST_NPV, S_LCOE, and ST_LCOE.
+Finally, the function outputs the sensitivity results for the project, including the project's name, type, and the calculated sensitivity indices for NPV and LCOE. The function returns a tuple containing the sensitivity indices for NPV and LCOE.
+"""
 function sensitivity_index(opt_scaling::String, n::Int64, wacc::Vector, electricity_price::Vector, pj::project)
 
     # generate random variable matrices A and B
@@ -273,6 +322,19 @@ function sensitivity_index(opt_scaling::String, n::Int64, wacc::Vector, electric
 
 end
 
+"""
+The gen_scaled_investment function takes in two arguments, scaling and pj, and returns an array containing the scaled investment costs for a given project.
+
+    Arguments    
+        scaling::Vector: A vector of scaling parameters that determines the range of the scaled investment costs.
+        pj::project: An instance of the project struct that contains information about the investment concept, investment type, investment estimate by manufacturer, plant capacity, learning factor, project time, load factor, operating cost, and reference reactor.
+    
+    Output
+        scaled_investment: A vector of scaled investment costs based on the project information and the given scaling parameter. The vector contains three parts:
+            The deterministic investment cost based on manufacturer estimates in USD per MW.
+            The range (lower and upper bound) of scaled investment cost based on Roulstone in USD per MW.
+            The range (lower and upper bound) of scaled investment cost based on Rothwell in USD per MW.
+"""
 function gen_scaled_investment(scaling::Vector, pj::project)
     
     # generation of project specific scaled investment cost ranges
