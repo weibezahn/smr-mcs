@@ -65,7 +65,7 @@ function gen_rand_vars(opt_scaling::String, n::Int64, wacc::Vector, electricity_
             elseif opt_scaling == "rothwell"
                 @info("using Rothwell scaling")
                 # random investment cost based on Rothwell [USD]
-                rand_scaling = (2^(scaling[1]-1) + (2^(scaling[2]-1) - 2^(scaling[1]-1))) .* rand(n,1)
+                rand_scaling = 2^(scaling[1]-1) .+ (2^(scaling[2]-1) - 2^(scaling[1]-1)) .* rand(n,1)
                 rand_investment = pj.reference_pj[1] * pj.reference_pj[2] * (1-pj.learning_factor) * (pj.plant_capacity/pj.reference_pj[2]) .^ (1 .+ log.(rand_scaling) ./ log(2))
             elseif opt_scaling == "uniform"
                 @info("using uniform scaling")

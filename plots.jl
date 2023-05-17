@@ -20,13 +20,13 @@ ax_theory = Axis(fig_theory[1,1], xlabel = "α", ylabel = "β(α)");
 xlims!(0, 1)
 ylims!(-2, 1)
 
-roulstone = lines!(x, y, label = "Roulstone", linewidth = 3);
-rothwell = lines!(x, z, lable = "Rothwell", linewidth = 3);
+roulstone = lines!(x, y, label = "Roulstone", linewidth = 3, color = :darkblue);
+rothwell = lines!(x, z, lable = "Rothwell", linewidth = 3, color = :green);
 hlines!(ax_theory, [0], color = :gray);
 
 Legend(fig_theory[1, 1],
     [roulstone, rothwell],
-    [L"\text{Roulstone:} β = α", L"\text{Rothwell:} β = 1+\frac{ln(α)}{ln(2)}"],
+    [L"β^\text{Roulstone}", L"β^\text{Rothwell}"],
     tellheight = false,
     tellwidth = false,
     halign = :right, valign = :bottom,
@@ -38,10 +38,42 @@ save("$outputpath/fig-theory.pdf", fig_theory);
 ##### comparison plot for investment cost from manufacturers vs. estimation #####
 
 # choose scaling parameters for the plot
-scaling_plot = [0.25, 0.85];
+scaling_plot = [0.20, 0.75];
 
 fig_invest_comparison = investment_plot(pjs, scaling_plot)
 save("$outputpath/fig-investment_comparison.pdf", fig_invest_comparison);
+
+##### histogram plots for comparison of estimation approaches #####
+
+hist_invest = Figure();
+
+for i in 1:3, j in 1:5
+    hist_invest_plot(n, wacc, electricity_price, pjs[j+5*(i-1)], i, j, hist_invest)
+end
+
+Legend(hist_invest[4,1:5],
+    [roulstone, rothwell],
+    ["Roulstone", "Rothwell"],
+    framevisible = false, orientation = :horizontal)
+
+hist_invest
+save("$outputpath/fig-histogram_investment.pdf", hist_invest);
+
+##### probability density plots for comparison of estimation approaches #####
+
+density_invest = Figure();
+
+for i in 1:3, j in 1:5
+    density_invest_plot(n, wacc, electricity_price, pjs[j+5*(i-1)], i, j, density_invest)
+end
+
+Legend(density_invest[4,1:5],
+    [roulstone, rothwell],
+    ["Roulstone", "Rothwell"],
+    framevisible = false, orientation = :horizontal)
+
+density_invest
+save("$outputpath/fig-density_investment.pdf", density_invest);
 
 ##### boxplots Monte Carlo simulation results #####
 # requires results for all 15 reactor concepts
@@ -101,11 +133,11 @@ colormap = [:darkgreen, :darkblue];
 fig_lcoe_comparison = Figure();
 ax_lcoe = Axis(fig_lcoe_comparison[1,1], yticks = (1:length(yticks), yticks), xscale = log10, xlabel = xlabel);
 
-xlims!(10, 10000)
+xlims!(10, 25000)
 
 rangebars!(ax_lcoe, 1:length(yticks), lcoe_plot_data[!,2], lcoe_plot_data[!,3], linewidth = 6, whiskerwidth = 8, direction = :x, color = col);
 hlines!(ax_lcoe, [8.5, 12.5], linestyle = :dash, color = :red);
-text!([7500,7500,15], [4, 10.5, 14]; text = ["Renewables\n(LAZARD)", "Conventionals\n(LAZARD)", "SMR Tech.\n($plot_scaling)"], align = (:center, :center), justification = :center, rotation = π/2);
+text!([15000,15000,16], [4, 10.5, 14]; text = ["Renewables\n(LAZARD)", "Conventionals\n(LAZARD)", "SMR Tech.\n($plot_scaling)"], align = (:center, :center), justification = :center, rotation = π/2);
 
 text!(lcoe_plot_data[!,2], 1:length(yticks), text = string.(round.(Int,lcoe_plot_data[!,2])), align = (:right, :center), offset = (-10,0));
 text!(lcoe_plot_data[!,3], 1:length(yticks), text = string.(round.(Int,lcoe_plot_data[!,3])), align = (:left, :center), offset = (10,0));

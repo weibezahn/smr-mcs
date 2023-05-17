@@ -24,7 +24,7 @@ function investment_plot(pjs, scaling_plot)
     ax_invest = Axis(fig_invest_comparison[1,1], yticks = (1:length(yticks), yticks), xscale = log10, xlabel = xlabel);
 
     rothwell = rangebars!(ax_invest, 1.2:length(yticks)+0.2, collect(scaled_investments[5,:]), collect(scaled_investments[4,:]), linewidth = 6, whiskerwidth = 12, direction = :x, transparency = :true, color = :green)
-    roulstone = rangebars!(ax_invest, 1:length(yticks), collect(scaled_investments[3,:]), collect(scaled_investments[2,:]), linewidth = 6, whiskerwidth = 12, direction = :x, transparency = :true, color = :blue)
+    roulstone = rangebars!(ax_invest, 1:length(yticks), collect(scaled_investments[3,:]), collect(scaled_investments[2,:]), linewidth = 6, whiskerwidth = 12, direction = :x, transparency = :true, color = :darkblue)
     manufacturer = scatter!(ax_invest, collect(scaled_investments[1,:]), 1:length(yticks), marker = :star5, color = :red)
 
     Legend(fig_invest_comparison[1, 1],
@@ -37,6 +37,66 @@ function investment_plot(pjs, scaling_plot)
 
     return fig_invest_comparison
 
+end
+
+"""
+The hist_invest_plot function generates a histogram plot of the investment values of a given project for a specified number of trials. The function takes in six arguments:
+- `n::Int64`: The number of trials.
+- `wacc::Vector`: A vector of weighted average cost of capital values for each trial (not used for the plot but needed for the gen_rand_vars function).
+- `electricity_price::Vector`: A vector of electricity prices for each trial (not used for the plot but needed for the gen_rand_vars function).
+- `pj::project`: An instance of a project class that contains information about the project.
+- `i::Int64`: The row index of the subplot where the histogram plot will be added.
+- `j::Int64`: The column index of the subplot where the histogram plot will be added.
+- `hist_invest = Figure()`: The histogram plot is added to this figure object. If not provided, a new figure object will be created.
+
+The function first generates random variables using the gen_rand_vars function for two different options of scaling. It then adds the histograms to the plot. Each histogram is normalized to show the probability density function.
+"""
+function hist_invest_plot(n::Int64, wacc::Vector, electricity_price::Vector, pj::project, i::Int64, j::Int64, hist_invest = Figure())
+
+    random_vars_roulstone = gen_rand_vars(opts_scaling[2], n, wacc, electricity_price, pj)
+    random_vars_rothwell = gen_rand_vars(opts_scaling[3], n, wacc, electricity_price, pj)
+    # random_vars_uniform = gen_rand_vars(opts_scaling[4], n, wacc, electricity_price, pj)
+
+    ax_invest = Axis(hist_invest[i,j]);
+    hidedecorations!(ax_invest)
+    hist!(ax_invest, vec(random_vars_rothwell.investment), normalization = :probability, color = (:green, 0.8), strokewidth = 1, strokecolor = :black)
+    hist!(ax_invest, vec(random_vars_roulstone.investment), normalization = :probability, color = (:darkblue, 0.8), strokewidth = 1, strokecolor = :black)
+    # hist!(ax_invest, vec(random_vars_uniform.investment), normalization = :probability, color = (:gray, 0.5), strokewidth = 1, strokecolor = :black)
+    Label(hist_invest[i, j, Top()], pj.name, font = "Noto Sans Bold", padding = (0, 6, 6, 0))
+    Label(hist_invest[i, j], pj.type, font = "Noto Sans Bold", fontsize = 8, halign = :right, valign = :top, justification = :center, padding = (4, 6, 6, 4), tellheight = false, tellwidth = false)
+    
+    return hist_invest
+
+end
+
+"""
+The density_invest_plot function generates a probability density plot of the investment values of a given project for a specified number of trials. The function takes in six arguments:
+- `n::Int64`: The number of trials.
+- `wacc::Vector`: A vector of weighted average cost of capital values for each trial (not used for the plot but needed for the gen_rand_vars function).
+- `electricity_price::Vector`: A vector of electricity prices for each trial (not used for the plot but needed for the gen_rand_vars function).
+- `pj::project`: An instance of a project class that contains information about the project.
+- `i::Int64`: The row index of the subplot where the histogram plot will be added.
+- `j::Int64`: The column index of the subplot where the histogram plot will be added.
+- `density_invest = Figure()`: The histogram plot is added to this figure object. If not provided, a new figure object will be created.
+
+The function first generates random variables using the gen_rand_vars function for two different options of scaling. It then adds the probability density function to the plot.
+"""
+function density_invest_plot(n::Int64, wacc::Vector, electricity_price::Vector, pj::project, i::Int64, j::Int64, density_invest = Figure())
+
+    random_vars_roulstone = gen_rand_vars(opts_scaling[2], n, wacc, electricity_price, pj)
+    random_vars_rothwell = gen_rand_vars(opts_scaling[3], n, wacc, electricity_price, pj)
+    # random_vars_uniform = gen_rand_vars(opts_scaling[4], n, wacc, electricity_price, pj)
+
+    ax_invest = Axis(density_invest[i,j]);
+    hidedecorations!(ax_invest)
+    density!(ax_invest, vec(random_vars_rothwell.investment), color = (:green, 0.8), strokewidth = 1, strokecolor = :black)
+    density!(ax_invest, vec(random_vars_roulstone.investment), color = (:darkblue, 0.8), strokewidth = 1, strokecolor = :black)
+    # density!(ax_invest, vec(random_vars_uniform.investment), color = (:gray, 0.5), strokewidth = 1, strokecolor = :black)
+    Label(density_invest[i, j, Top()], pj.name, font = "Noto Sans Bold", padding = (0, 6, 6, 0))
+    Label(density_invest[i, j], pj.type, font = "Noto Sans Bold", fontsize = 8, halign = :right, valign = :top, justification = :center, padding = (4, 6, 6, 4), tellheight = false, tellwidth = false)
+
+    return density_invest
+    
 end
 
 """

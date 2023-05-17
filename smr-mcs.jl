@@ -23,13 +23,13 @@ include("data.jl");
     electricity_price = [52.2, 95.8];
 
     # weighted average cost of capital (WACC), lower and upper bound of rand variable
-    wacc = [0.04, 0.1];
+    wacc = [0.04, 0.10];
 
     # scaling
         # scaling options
         opts_scaling = ["manufacturer", "roulstone", "rothwell", "uniform"];
         # scaling parameter, lower and upper bound of random variable
-        scaling = [0.25, 0.85];
+        scaling = [0.20, 0.75];
 
     # choose scaling option
     if @isdefined(par_job) == true
